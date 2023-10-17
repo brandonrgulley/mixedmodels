@@ -1,0 +1,100 @@
+---
+title: "Activity Changes Pre and Post Treatment"
+author: "Brandon Gulley"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(ggplot2)
+library(dplyr)
+library(arm)
+library(MASS)
+library(ggfortify)
+library(nlme)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(ggtext)
+library(patchwork)
+library(easystats)
+library(readxl)
+library(pbkrtest)
+
+```
+
+``` {r data readin, echo=FALSE, include=FALSE}
+
+bats <- read_xlsx("id_clean.xlsx") %>% 
+  filter(trial == "4")
+
+bats$sp_code <- as.factor(bats$sp_code)
+
+```
+
+**During sampline, plots were spread out along the landspace over the course of four trials. Five species were sampled during these trials. Trial four is reviewed below.**
+
+```{r plot1, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+
+ggplot(bats, aes(treatment_combined, fill=species)) +
+  geom_bar(color="black") +
+  labs(x="Treatment", y="Count", title="Sample of Species by Treatment", subtitle = "n = 5 Species with repeated detections (1,896 detections total)")
+
+```
+
+``` {r plot 2, echo=FALSE, include=TRUE}
+
+ggplot(bats, aes(x=treatment_combined, y=duration, group=species, color=species, shape=species)) + 
+  geom_point(stat = "summary", size=4, position = position_dodge2(width=.33, preserve = "total")) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title="Activity by Treatment",
+       x= "Treatment", 
+       y = "Activity")
+
+```
+
+``` {r model 1, echo=FALSE, include=TRUE}
+
+activity_means <- bats %>% 
+  group_by(treatment_combined) %>% 
+  summarise(mean_activity = mean(duration),
+            se_activity = sd(duration)/sqrt(n()))
+activity_means
+
+mixed_activity <- lmer(duration~(treatment_combined*sp_code)+(1|sp_code), data = bats)
+
+check_model(mixed_activity)
+
+anova(mixed_activity)
+
+summary(mixed_activity)
+
+mixed_activity_emm <- emmeans(mixed_activity, "treatment_combined")
+
+mixed_activity_emm
+
+emmeans(mixed_activity, "sp_code")
+
+emmeans(mixed_activity, "treatment_combined", "sp_code")
+
+emmeans(mixed_activity, "sp_code", "treatment_combined")
+
+data_emm <- as.data.frame(mixed_activity_emm)
+data_emm
+
+activity_means
+
+```
+
+``` {r plot adjusted means, echo=FALSE, include=TRUE}
+
+p2<- ggplot(data_emm, aes(x=treatment_combined, y=emmean)) + 
+  geom_point(size=4, color="blue") +
+  geom_errorbar(aes(ymin=emmean-SE, ymax=emmean+SE), width=.2, color="blue") +
+  geom_point(data=activity_means, size=4, x=activity_means$treatment_combined, y=activity_means$mean_activity, color="red")+
+  labs(x="Treatment", y="Means of Activity", title="Comparison of Adjusted Means")
+
+p2
+
+```
