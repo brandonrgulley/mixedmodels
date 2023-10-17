@@ -21,6 +21,7 @@ library(patchwork)
 library(easystats)
 library(readxl)
 library(pbkrtest)
+library(knitr)
 
 ```
 
@@ -35,11 +36,9 @@ bats$sp_code <- as.factor(bats$sp_code)
 
 **During sampline, plots were spread out along the landspace over the course of four trials. Five species were sampled during these trials. Trial four is reviewed below.**
 
-```{r plot1, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+``` {r table, echo=FALSE, include=TRUE}
 
-ggplot(bats, aes(treatment_combined, fill=species)) +
-  geom_bar(color="black") +
-  labs(x="Treatment", y="Count", title="Sample of Species by Treatment", subtitle = "n = 5 Species with repeated detections (1,896 detections total)")
+kable(bats[1:10, ], caption = 'Table 1. Trial 4 Bat Activity')
 
 ```
 
